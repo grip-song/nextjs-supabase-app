@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { GoogleLoginButton } from "@/components/google-login-button";
 
 export function SignUpForm({
   className,
@@ -113,6 +114,19 @@ export function SignUpForm({
               </Link>
             </div>
           </form>
+
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-card px-2 uppercase text-muted-foreground">
+                또는
+              </span>
+            </div>
+          </div>
+
+          <GoogleLoginButton />
         </CardContent>
       </Card>
     </div>
