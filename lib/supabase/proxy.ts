@@ -48,11 +48,25 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
+  const pathname = request.nextUrl.pathname;
+
+  // /admin/* 경로 (단, /admin/login은 제외): 관리자 role이 아니면 /admin/login으로 리다이렉트
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
+    const role = user?.user_metadata?.role;
+    if (!user || role !== "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/login";
+      return NextResponse.redirect(url);
+    }
+  }
+
   if (
-    request.nextUrl.pathname !== "/" &&
+    pathname !== "/" &&
     !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
+    !pathname.startsWith("/login") &&
+    !pathname.startsWith("/auth") &&
+    !pathname.startsWith("/join") &&
+    !pathname.startsWith("/admin")
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
