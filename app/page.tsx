@@ -1,57 +1,60 @@
-import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { Hero } from "@/components/hero";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { ConnectSupabaseSteps } from "@/components/tutorial/connect-supabase-steps";
-import { SignUpUserSteps } from "@/components/tutorial/sign-up-user-steps";
-import { hasEnvVars } from "@/lib/utils";
-import Link from "next/link";
-import { Suspense } from "react";
+import { GoogleLoginButton } from "@/components/google-login-button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Link2, Users, Smartphone } from "lucide-react";
+
+const FEATURES = [
+  {
+    icon: Link2,
+    title: "초대 링크 하나로 시작",
+    description:
+      "이벤트를 만들고 링크만 공유하면 끝, 복잡한 가입 절차가 없어요.",
+  },
+  {
+    icon: Users,
+    title: "실시간 참여자 확인",
+    description: "누가 참여했는지 실시간으로 확인하고 준비를 챙길 수 있어요.",
+  },
+  {
+    icon: Smartphone,
+    title: "모바일에 최적화",
+    description: "언제 어디서나 폰으로 간편하게 이벤트를 관리할 수 있어요.",
+  },
+] as const;
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center">
-      <div className="flex w-full flex-1 flex-col items-center gap-20">
-        <nav className="flex h-16 w-full justify-center border-b border-b-foreground/10">
-          <div className="flex w-full max-w-5xl items-center justify-between p-3 px-5 text-sm">
-            <div className="flex items-center gap-5 font-semibold">
-              <Link href={"/"}>Next.js Supabase Starter</Link>
-              <div className="flex items-center gap-2">
-                <DeployButton />
-              </div>
-            </div>
-            {!hasEnvVars ? (
-              <EnvVarWarning />
-            ) : (
-              <Suspense>
-                <AuthButton />
-              </Suspense>
-            )}
-          </div>
-        </nav>
-        <div className="flex max-w-5xl flex-1 flex-col gap-20 p-5">
-          <Hero />
-          <main className="flex flex-1 flex-col gap-6 px-4">
-            <h2 className="mb-4 text-xl font-medium">Next steps</h2>
-            {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
-          </main>
+    <main className="flex min-h-svh flex-col items-center justify-center bg-background px-6 py-16">
+      <div className="flex w-full max-w-sm flex-col items-center gap-10 text-center">
+        <div className="flex flex-col items-center gap-3">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+            Gather
+          </h1>
+          <p className="text-balance text-muted-foreground">
+            초대 링크 하나로 이벤트를 간편하게
+          </p>
         </div>
 
-        <footer className="mx-auto flex w-full items-center justify-center gap-8 border-t py-16 text-center text-xs">
-          <p>
-            Powered by{" "}
-            <a
-              href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-              target="_blank"
-              className="font-bold hover:underline"
-              rel="noreferrer"
-            >
-              Supabase
-            </a>
-          </p>
-          <ThemeSwitcher />
-        </footer>
+        <div className="flex w-full flex-col gap-3">
+          {FEATURES.map((feature) => (
+            <Card key={feature.title} className="text-left">
+              <CardContent className="flex items-start gap-3 p-4">
+                <feature.icon className="mt-0.5 size-5 shrink-0 text-primary" />
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-medium text-foreground">
+                    {feature.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {feature.description}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="w-full">
+          <GoogleLoginButton />
+        </div>
       </div>
     </main>
   );
