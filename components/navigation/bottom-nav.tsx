@@ -18,6 +18,7 @@ export function BottomNav() {
     <nav className="fixed inset-x-0 bottom-0 z-50 flex h-16 items-center border-t bg-background">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href;
+        const isCreate = href === "/events/new";
 
         return (
           <Link
@@ -28,7 +29,13 @@ export function BottomNav() {
               isActive ? "text-primary" : "text-muted-foreground",
             )}
           >
-            <Icon size={22} />
+            {isCreate ? (
+              <span className="flex size-12 -translate-y-3 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+                <Icon size={24} />
+              </span>
+            ) : (
+              <Icon size={22} />
+            )}
             {label}
           </Link>
         );
