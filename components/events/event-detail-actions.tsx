@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Link2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { deleteEvent } from "@/app/actions/events";
 
 interface EventDetailActionsProps {
   eventId: string;
@@ -23,14 +23,16 @@ interface EventDetailActionsProps {
 
 /**
  * 이벤트 상세 페이지의 주최자 전용 액션(초대 링크 복사/수정/삭제).
- * 실제 삭제 로직은 없으며(Task 009 범위), 확인 시 toast 안내 후 목록으로 이동한다.
+ * 삭제는 폼 없이 버튼 클릭으로 바로 서버 액션(deleteEvent)을 호출한다.
+ * 성공 시 서버 액션 내부의 redirect가 네비게이션까지 처리하므로,
+ * 클라이언트에서는 실패했을 때(권한 없음 등)만 sonner toast로 안내한다.
  */
 export function EventDetailActions({
   eventId,
   inviteCode,
 }: EventDetailActionsProps) {
-  const router = useRouter();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, startDeleteTransition] = useTransition();
 
   function handleCopyInviteLink() {
     const inviteUrl = `${window.location.origin}/join/${inviteCode}`;
@@ -40,8 +42,13 @@ export function EventDetailActions({
 
   function handleDeleteConfirm() {
     setIsDeleteDialogOpen(false);
-    toast.success("이벤트가 삭제되었습니다");
-    router.push("/events");
+    startDeleteTransition(async () => {
+      const result = await deleteEvent(eventId);
+      // 성공 시 deleteEvent 내부의 redirect()가 던져져 이 아래 코드는 실행되지 않는다.
+      if (result && !result.success) {
+        toast.error(result.message ?? "이벤트 삭제에 실패했어요");
+      }
+    });
   }
 
   return (
@@ -79,11 +86,16 @@ export function EventDetailActions({
             <Button
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
             >
               취소
             </Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm}>
-              삭제
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "삭제 중..." : "삭제"}
             </Button>
           </DialogFooter>
         </DialogContent>

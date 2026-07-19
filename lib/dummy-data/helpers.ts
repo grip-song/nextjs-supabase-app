@@ -3,7 +3,6 @@ import type {
   EventStatus,
   EventWithHost,
   EventWithParticipantCount,
-  ParticipantWithUser,
   User,
   UserWithEventStats,
 } from "@/types";
@@ -56,18 +55,6 @@ export function getEventsWithHost(): EventWithHost[] {
   });
 }
 
-export function getParticipantsWithUser(
-  eventId: string,
-): ParticipantWithUser[] {
-  return dummyParticipants
-    .filter((participant) => participant.event_id === eventId)
-    .flatMap((participant) => {
-      const user = getUserById(participant.user_id);
-      if (!user) return [];
-      return [{ ...participant, user }];
-    });
-}
-
 export function getCurrentUser(): User {
   const user = getUserById(CURRENT_USER_ID);
   if (!user) {
@@ -82,23 +69,6 @@ export function getCurrentUser(): User {
 export function getMyHostedEvents(): EventWithParticipantCount[] {
   return getEventsWithParticipantCount().filter(
     (event) => event.created_by === CURRENT_USER_ID,
-  );
-}
-
-/** 현재 사용자가 참여자(role: 'participant')로 참여 중인 이벤트 목록 */
-export function getMyParticipatingEvents(): EventWithParticipantCount[] {
-  const participatingEventIds = new Set(
-    dummyParticipants
-      .filter(
-        (participant) =>
-          participant.user_id === CURRENT_USER_ID &&
-          participant.role === "participant",
-      )
-      .map((participant) => participant.event_id),
-  );
-
-  return getEventsWithParticipantCount().filter((event) =>
-    participatingEventIds.has(event.id),
   );
 }
 

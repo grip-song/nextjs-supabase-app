@@ -1,15 +1,13 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { Calendar, ImageOff, MapPin, Users } from "lucide-react";
+import { Calendar, ImageOff, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
 import { JoinEventAction } from "@/components/join/join-event-action";
-import {
-  CURRENT_USER_ID,
-  getEventByInviteCode,
-  getParticipantsWithUser,
-  getUserById,
-} from "@/lib/dummy-data";
+import { getEventByInviteCode } from "@/lib/events/queries";
+import { getUserById } from "@/lib/users/queries";
+import { isUserParticipating } from "@/lib/participants/queries";
+import { createClient } from "@/lib/supabase/server";
 
 function formatEventDate(isoDate: string) {
   return new Date(isoDate).toLocaleString("ko-KR", {
@@ -27,17 +25,22 @@ export default async function JoinEventPage({
   params: Promise<{ invite_code: string }>;
 }) {
   const { invite_code } = await params;
-  const event = getEventByInviteCode(invite_code);
+  const event = await getEventByInviteCode(invite_code);
 
   if (!event) {
     notFound();
   }
 
-  const host = getUserById(event.created_by);
-  const participants = getParticipantsWithUser(event.id);
-  const alreadyJoined = participants.some(
-    (participant) => participant.user_id === CURRENT_USER_ID,
-  );
+  const host = await getUserById(event.created_by);
+
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+
+  // 비로그인 사용자는 참여 이력이 있을 수 없으므로 조회 없이 false로 둔다.
+  const alreadyJoined = claims
+    ? await isUserParticipating(event.id, claims.sub)
+    : false;
 
   return (
     <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center gap-6 px-4 py-10">
@@ -83,10 +86,6 @@ export default async function JoinEventPage({
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <MapPin className="size-4 shrink-0" />
               <span>{event.location}</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Users className="size-4 shrink-0" />
-              <span>참여자 {participants.length}명</span>
             </div>
           </div>
 

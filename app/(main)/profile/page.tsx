@@ -1,17 +1,35 @@
+import { redirect } from "next/navigation";
 import { CalendarPlus, PartyPopper } from "lucide-react";
 import { EventCard } from "@/components/events/event-card";
 import { EmptyState } from "@/components/empty-state";
 import { UserAvatar } from "@/components/user-avatar";
-import {
-  getCurrentUser,
-  getMyHostedEvents,
-  getMyParticipatingEvents,
-} from "@/lib/dummy-data";
+import { LogoutButton } from "@/components/logout-button";
+import { createClient } from "@/lib/supabase/server";
+import { getMyHostedEvents } from "@/lib/events/queries";
+import { getUserById } from "@/lib/users/queries";
+import { getMyParticipatingEvents } from "@/lib/participants/queries";
 
-export default function ProfilePage() {
-  const user = getCurrentUser();
-  const hostedEvents = getMyHostedEvents();
-  const participatingEvents = getMyParticipatingEvents();
+export default async function ProfilePage() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+
+  // 미들웨어가 비로그인 접근을 이미 /auth/login으로 리다이렉트하지만,
+  // 서버 컴포넌트 자체에서도 방어적으로 재확인한다.
+  if (!claims) {
+    redirect("/auth/login");
+  }
+
+  const [user, hostedEvents] = await Promise.all([
+    getUserById(claims.sub),
+    getMyHostedEvents(claims.sub),
+  ]);
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  const participatingEvents = await getMyParticipatingEvents(claims.sub);
 
   return (
     <div className="flex flex-col gap-6">
@@ -64,6 +82,10 @@ export default function ProfilePage() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="border-t pt-4">
+        <LogoutButton />
       </div>
     </div>
   );

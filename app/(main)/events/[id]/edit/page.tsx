@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { EventForm } from "@/components/events/event-form";
-import { getEventById } from "@/lib/dummy-data";
+import { getEventById } from "@/lib/events/queries";
 
 /** ISO 문자열을 <input type="datetime-local">이 요구하는 'YYYY-MM-DDTHH:mm' 포맷으로 변환한다. */
 function toDatetimeLocal(iso: string) {
@@ -13,7 +13,7 @@ export default async function EditEventPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const event = getEventById(id);
+  const event = await getEventById(id);
 
   if (!event) {
     notFound();
@@ -30,8 +30,8 @@ export default async function EditEventPage({
           location: event.location,
           event_date: toDatetimeLocal(event.event_date),
           description: event.description ?? "",
-          cover_image_url: event.cover_image_url ?? "",
         }}
+        defaultCoverImageUrl={event.cover_image_url}
       />
     </div>
   );

@@ -27,3 +27,15 @@ export const eventFormSchema = z.object({
 });
 
 export type EventFormValues = z.infer<typeof eventFormSchema>;
+
+/**
+ * 커버 이미지는 <Input type="file">로 전송되어 폼 액션의 FormData에 별도 필드로
+ * 포함되므로(react-hook-form이 관리하지 않는 uncontrolled 필드), 텍스트 필드만
+ * 검증하는 서브셋 스키마. 클라이언트 폼(react-hook-form)과 Server Action
+ * (app/actions/events.ts) 양쪽에서 동일하게 재사용해 검증 로직을 일치시킨다.
+ */
+export const eventTextFieldsSchema = eventFormSchema.omit({
+  cover_image_url: true,
+});
+
+export type EventTextFieldValues = z.infer<typeof eventTextFieldsSchema>;
