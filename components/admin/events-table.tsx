@@ -133,7 +133,7 @@ export function EventsTable({ initialEvents }: EventsTableProps) {
       </div>
 
       {/* 이벤트 목록 테이블 */}
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

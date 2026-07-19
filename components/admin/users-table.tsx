@@ -118,7 +118,7 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
       </div>
 
       {/* 사용자 목록 테이블 */}
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
