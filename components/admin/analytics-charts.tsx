@@ -37,9 +37,9 @@ const STATUS_CHART_CONFIG: Record<
   EventStatus,
   { label: string; color: string }
 > = {
-  upcoming: { label: "예정", color: "hsl(var(--chart-1))" },
-  ongoing: { label: "진행 중", color: "hsl(var(--chart-2))" },
-  ended: { label: "종료", color: "hsl(var(--chart-4))" },
+  upcoming: { label: "예정", color: "var(--chart-1)" },
+  ongoing: { label: "진행 중", color: "var(--chart-2)" },
+  ended: { label: "종료", color: "var(--chart-4)" },
 };
 
 /** "YYYY-MM" 형식의 월 문자열을 "M월" 형식의 축 라벨로 변환 */
@@ -49,7 +49,7 @@ function formatMonthLabel(month: string): string {
 }
 
 /** 공통 축 눈금 스타일 (다크모드에서도 읽히도록 muted-foreground CSS 변수 사용) */
-const AXIS_TICK_STYLE = { fill: "hsl(var(--muted-foreground))", fontSize: 12 };
+const AXIS_TICK_STYLE = { fill: "var(--muted-foreground)", fontSize: 12 };
 
 /**
  * 두 차트가 공유하는 커스텀 툴팁.
@@ -125,11 +125,11 @@ export function AnalyticsCharts({
                 data={monthlyChartData}
                 margin={{ top: 16, right: 8, left: 0, bottom: 0 }}
               >
-                <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
+                <CartesianGrid vertical={false} stroke="var(--border)" />
                 <XAxis
                   dataKey="label"
                   tickLine={false}
-                  axisLine={{ stroke: "hsl(var(--border))" }}
+                  axisLine={{ stroke: "var(--border)" }}
                   tick={AXIS_TICK_STYLE}
                 />
                 <YAxis
@@ -140,13 +140,13 @@ export function AnalyticsCharts({
                   width={32}
                 />
                 <Tooltip
-                  cursor={{ fill: "hsl(var(--muted))" }}
+                  cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
                   content={<ChartTooltip />}
                 />
                 <Bar
                   dataKey="count"
                   name="신규 이벤트"
-                  fill="hsl(var(--chart-1))"
+                  fill="var(--chart-1)"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={48}
                 >
@@ -178,11 +178,11 @@ export function AnalyticsCharts({
                 data={statusChartData}
                 margin={{ top: 16, right: 8, left: 0, bottom: 0 }}
               >
-                <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
+                <CartesianGrid vertical={false} stroke="var(--border)" />
                 <XAxis
                   dataKey="label"
                   tickLine={false}
-                  axisLine={{ stroke: "hsl(var(--border))" }}
+                  axisLine={{ stroke: "var(--border)" }}
                   tick={AXIS_TICK_STYLE}
                 />
                 <YAxis
@@ -193,7 +193,7 @@ export function AnalyticsCharts({
                   width={32}
                 />
                 <Tooltip
-                  cursor={{ fill: "hsl(var(--muted))" }}
+                  cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
                   content={<ChartTooltip />}
                 />
                 <Bar
