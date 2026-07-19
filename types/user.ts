@@ -9,3 +9,9 @@ export type User = {
   created_at: string;
   updated_at: string;
 };
+
+/** 관리자 사용자 관리 페이지용: 사용자 정보 + 주최/참여 이벤트 수 통계 */
+export type UserWithEventStats = User & {
+  hostedEventCount: number;
+  participatingEventCount: number;
+};
