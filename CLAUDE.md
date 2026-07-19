@@ -32,9 +32,9 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 - **`lib/supabase/server.ts`** — 서버 컴포넌트 및 Route Handler용. `createServerClient` + `next/headers`의 쿠키 사용. Fluid Compute 환경에서는 전역 변수에 저장하지 말고 함수 내에서 매번 새로 생성해야 합니다.
 - **`lib/supabase/proxy.ts`** — Next.js 미들웨어(`proxy.ts`)용. 요청마다 세션을 갱신합니다.
 
-### 미들웨어 (proxy.ts)
+### 미들웨어 (middleware.ts)
 
-루트의 `proxy.ts`가 Next.js 미들웨어로 동작하며, 정적 파일/이미지를 제외한 모든 경로를 가로채 `lib/supabase/proxy.ts`의 `updateSession()`을 호출합니다. 이 함수는 비로그인 사용자가 `/` 또는 `/auth/*` 이외의 경로에 접근하면 `/auth/login`으로 리다이렉트합니다.
+루트의 `middleware.ts`가 Next.js 미들웨어로 동작하며(Next.js 15까지는 파일명이 반드시 `middleware.ts`여야 하고, `proxy.ts` 컨벤션은 Next.js 16부터 도입됨), 정적 파일/이미지를 제외한 모든 경로를 가로채 `lib/supabase/proxy.ts`의 `updateSession()`을 호출합니다. 이 함수는 비로그인 사용자가 `/` 또는 `/auth/*` 이외의 경로에 접근하면 `/auth/login`으로 리다이렉트하고, `/admin/*` 경로는 `public.users.role`을 조회해 관리자가 아니면 `/admin/login`으로 리다이렉트합니다.
 
 ### 인증 흐름
 

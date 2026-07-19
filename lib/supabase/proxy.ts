@@ -51,9 +51,23 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // /admin/* 경로 (단, /admin/login은 제외): 관리자 role이 아니면 /admin/login으로 리다이렉트
+  // 주의: user_metadata는 로그인한 본인이 supabase.auth.updateUser()로 직접 조작 가능하므로
+  // 신뢰할 수 없다. 반드시 서버 측 신뢰 소스인 public.users.role 컬럼을 조회해서 판정한다.
+  // 미들웨어는 Edge Runtime이라 매 요청 DB 왕복 비용이 있으므로 /admin 경로일 때만 조회한다.
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
-    const role = user?.user_metadata?.role;
-    if (!user || role !== "admin") {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/login";
+      return NextResponse.redirect(url);
+    }
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.sub)
+      .single();
+
+    if (profile?.role !== "admin") {
       const url = request.nextUrl.clone();
       url.pathname = "/admin/login";
       return NextResponse.redirect(url);
