@@ -8,5 +8,6 @@
   "bracketSameLine": false,
   "arrowParens": "always",
   "endOfLine": "lf",
+  "tailwindStylesheet": "./app/globals.css",
   "plugins": ["prettier-plugin-tailwindcss"]
 }

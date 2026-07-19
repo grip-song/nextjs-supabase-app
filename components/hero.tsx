@@ -18,7 +18,7 @@ export function Hero() {
         </a>
       </div>
       <h1 className="sr-only">Supabase and Next.js Starter Template</h1>
-      <p className="mx-auto max-w-xl text-center text-3xl !leading-tight lg:text-4xl">
+      <p className="mx-auto max-w-xl text-center text-3xl leading-tight! lg:text-4xl">
         The fastest way to build apps with{" "}
         <a
           href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"

@@ -69,7 +69,7 @@ export function EventCard({
 
         <CardHeader className={cn("gap-2", isCompact && "p-4")}>
           <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-1 font-semibold leading-none tracking-tight">
+            <h3 className="line-clamp-1 leading-none font-semibold tracking-tight">
               {event.title}
             </h3>
             <EventStatusBadge status={event.status} className="shrink-0" />
@@ -77,7 +77,7 @@ export function EventCard({
         </CardHeader>
 
         <CardContent
-          className={cn("flex flex-col gap-1.5", isCompact && "px-4 pb-4 pt-0")}
+          className={cn("flex flex-col gap-1.5", isCompact && "px-4 pt-0 pb-4")}
         >
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Calendar className="size-4 shrink-0" />
@@ -96,7 +96,7 @@ export function EventCard({
         </CardContent>
 
         {host && (
-          <CardFooter className={cn("gap-2", isCompact && "px-4 pb-4 pt-0")}>
+          <CardFooter className={cn("gap-2", isCompact && "px-4 pt-0 pb-4")}>
             <UserAvatar user={host} size="sm" />
             <span className="text-sm text-muted-foreground">{host.name}</span>
           </CardFooter>

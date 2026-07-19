@@ -51,7 +51,7 @@ export function CodeBlock({ code }: { code: string }) {
         size="icon"
         onClick={copy}
         variant={"outline"}
-        className="absolute right-2 top-2"
+        className="absolute top-2 right-2"
       >
         {icon}
       </Button>

@@ -65,7 +65,7 @@ export default async function JoinEventPage({
         </div>
 
         <CardHeader className="gap-2">
-          <h2 className="font-semibold leading-none tracking-tight">
+          <h2 className="leading-none font-semibold tracking-tight">
             {event.title}
           </h2>
         </CardHeader>

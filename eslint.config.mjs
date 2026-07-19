@@ -14,7 +14,14 @@ const compat = new FlatCompat({
 const eslintConfig = [
   { ignores: [".next/**", "node_modules/**", "out/**", "dist/**"] },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
-  ...tailwindPlugin.configs["flat/recommended"],
+  {
+    ...tailwindPlugin.configs.recommended,
+    settings: {
+      tailwindcss: {
+        cssConfigPath: "./app/globals.css",
+      },
+    },
+  },
   eslintConfigPrettier, // Prettier와 충돌하는 규칙 비활성화 - 반드시 마지막
 ];
 
