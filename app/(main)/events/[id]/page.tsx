@@ -68,7 +68,11 @@ export default async function EventDetailPage({
         </h2>
         <div className="flex flex-col gap-2">
           {participants.map((participant) => (
-            <ParticipantCard key={participant.id} participant={participant} />
+            <ParticipantCard
+              key={participant.id}
+              participant={participant}
+              isCurrentUser={participant.user_id === CURRENT_USER_ID}
+            />
           ))}
         </div>
       </div>

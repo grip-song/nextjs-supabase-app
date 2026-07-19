@@ -6,6 +6,8 @@ import type { ParticipantWithUser } from "@/types";
 interface ParticipantCardProps {
   participant: ParticipantWithUser;
   variant?: "default" | "compact";
+  /** 현재 로그인한 사용자 본인의 카드인지 여부 */
+  isCurrentUser?: boolean;
   className?: string;
 }
 
@@ -21,6 +23,7 @@ function formatJoinedAt(isoDate: string) {
 export function ParticipantCard({
   participant,
   variant = "default",
+  isCurrentUser = false,
   className,
 }: ParticipantCardProps) {
   const isCompact = variant === "compact";
@@ -30,6 +33,7 @@ export function ParticipantCard({
     <div
       className={cn(
         "flex items-center gap-3 rounded-lg border bg-card p-3",
+        isCurrentUser && "border-primary",
         className,
       )}
     >
@@ -38,6 +42,9 @@ export function ParticipantCard({
         <div className="flex items-center gap-2">
           <span className="truncate text-sm font-medium text-foreground">
             {participant.user.name}
+            {isCurrentUser && (
+              <span className="text-muted-foreground"> (나)</span>
+            )}
           </span>
           <Badge
             variant={isHost ? "outline" : "secondary"}
