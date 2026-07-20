@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EventStatusBadge } from "@/components/events/event-status-badge";
 import {
   getAdminDashboardStats,
-  getEventsWithHost,
-} from "@/lib/dummy-data/helpers";
+  getRecentEventsWithHost,
+} from "@/lib/admin/queries";
 
 /** 통계 카드 한 항목의 데이터 형태 */
 interface StatItem {
@@ -23,16 +23,11 @@ function formatCreatedAt(isoDate: string) {
   });
 }
 
-export default function AdminDashboardPage() {
-  const { totalEvents, totalUsers, totalParticipants, eventsByStatus } =
-    getAdminDashboardStats();
-
-  const recentEvents = [...getEventsWithHost()]
-    .sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    )
-    .slice(0, 5);
+export default async function AdminDashboardPage() {
+  const [
+    { totalEvents, totalUsers, totalParticipants, eventsByStatus },
+    recentEvents,
+  ] = await Promise.all([getAdminDashboardStats(), getRecentEventsWithHost(5)]);
 
   const stats: StatItem[] = [
     {

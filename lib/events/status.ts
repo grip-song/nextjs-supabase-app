@@ -1,6 +1,11 @@
 import type { EventStatus } from "@/types";
 
-const ONGOING_WINDOW_MS = 24 * 60 * 60 * 1000;
+/**
+ * "진행 중(ongoing)" 판정 윈도우(24시간, ms).
+ * lib/admin/queries.ts의 관리자 이벤트 상태 필터(SQL 날짜 조건)에서도 이 값을 그대로 import해
+ * 사용한다 — 두 곳의 값이 어긋나지 않도록 반드시 이 상수를 단일 소스로 유지할 것.
+ */
+export const ONGOING_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /**
  * event_date를 기준으로 이벤트 상태를 계산하는 순수 함수.

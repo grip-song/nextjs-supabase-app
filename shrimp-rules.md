@@ -45,8 +45,6 @@ lib/
     client.ts                # 브라우저(클라이언트 컴포넌트) 전용
     server.ts                # 서버 컴포넌트·Route Handler 전용
     proxy.ts                 # 미들웨어(proxy.ts) 전용
-  dummy-data/                 # Phase 2 더미 데이터 (users.ts, events.ts, participants.ts,
-                              # helpers.ts, index.ts) — Task 007+ 실제 DB 연동 전까지 사용
   utils.ts                   # cn(), hasEnvVars
 types/
   database.ts                # Supabase DB 타입 수동 정의 (현재 profiles만 보유,
@@ -127,12 +125,9 @@ docs/
 - 도메인에 속하지 않는 범용 컴포넌트는 `components/` 루트에 평면 파일로 생성한다(예: `components/user-avatar.tsx`).
 - **`components/common/`, `components/shared/`, `components/misc/` 같은 의미 없는 폴더명을 만들지 않는다.**
 
-### 더미 데이터 추가/수정 시
-
-- `lib/dummy-data/` 하위에 관심사별 파일로 분리한다(`users.ts`, `events.ts`, `participants.ts`, `helpers.ts`).
-- 조회/조합 함수는 `helpers.ts`에 작성하고 실제 DB 연동(Task 007+) 시 동일한 함수 시그니처를 유지한 채 내부만 비동기 쿼리로 교체할 수 있도록 이름을 짓는다(예: `getEventById`, `getMyHostedEvents`).
-- 새로 추가한 더미 데이터/헬퍼는 반드시 `lib/dummy-data/index.ts`에서 재노출한다.
-- 더미 이벤트의 `cover_image_url`에 외부 URL(picsum 등)을 사용하지 않는다 — `next.config.ts`에 `images.remotePatterns`가 설정되어 있지 않아 `next/image`가 에러를 낸다. 로컬 `public/` 자산을 사용하거나 `null`로 둔다.
+> `lib/dummy-data/`(Phase 2 더미 데이터)는 Task 011에서 모든 화면이 실제 Supabase 쿼리로 전환됨에
+> 따라 제거되었다. 조회/조합 함수는 이제 `lib/events/queries.ts`, `lib/participants/queries.ts`,
+> `lib/users/queries.ts`, `lib/admin/queries.ts` 등 도메인별 `queries.ts`에 위치한다.
 
 ---
 

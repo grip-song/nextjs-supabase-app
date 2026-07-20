@@ -2,11 +2,13 @@ import { AnalyticsCharts } from "@/components/admin/analytics-charts";
 import {
   getAdminDashboardStats,
   getEventsCreatedByMonth,
-} from "@/lib/dummy-data/helpers";
+} from "@/lib/admin/queries";
 
-export default function AdminAnalyticsPage() {
-  const { eventsByStatus } = getAdminDashboardStats();
-  const monthlyEvents = getEventsCreatedByMonth();
+export default async function AdminAnalyticsPage() {
+  const [{ eventsByStatus }, monthlyEvents] = await Promise.all([
+    getAdminDashboardStats(),
+    getEventsCreatedByMonth(),
+  ]);
 
   return (
     <div className="space-y-8">

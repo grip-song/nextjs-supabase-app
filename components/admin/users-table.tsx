@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,24 +21,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import type {
-  AdminUserFilter,
+  AdminUserListParams,
   AdminUserRoleFilter,
   UserWithEventStats,
 } from "@/types";
 
 interface UsersTableProps {
-  /** 서버에서 조회한 초기 사용자 목록 (관리자 화면 전용 더미 조합 데이터) */
-  initialUsers: UserWithEventStats[];
+  /** 서버(getAdminUsersOverview)에서 이미 검색·필터·페이지네이션이 적용된 현재 페이지 목록 */
+  users: UserWithEventStats[];
+  /** 필터 조건 전체에 대한 총 건수(페이지네이션 계산용) */
+  totalCount: number;
+  /** 현재 적용된 검색/필터/페이지 파라미터(URL 쿼리와 동기화된 상태) */
+  filter: AdminUserListParams;
 }
 
 const ROLE_OPTIONS: { value: AdminUserRoleFilter; label: string }[] = [
@@ -49,50 +44,66 @@ const ROLE_OPTIONS: { value: AdminUserRoleFilter; label: string }[] = [
 
 /**
  * 관리자용 사용자 관리 테이블.
- * 검색어(이름/이메일)와 역할로 클라이언트 사이드 필터링하며,
- * 행 삭제는 로컬 state에서만 제거하는 더미 동작(실제 API 없음)이다.
+ * 검색어(이름/이메일)·역할·페이지는 모두 URL 쿼리 파라미터로 관리하며, 값이 바뀔 때마다
+ * router.push로 URL을 갱신해 상위 Server Component(app/admin/(dashboard)/users/page.tsx)가
+ * getAdminUsersOverview를 다시 호출하도록 한다(클라이언트 사이드 필터링 없음).
+ *
+ * 사용자 삭제는 이번 MVP 범위에서 제외했다: public.users에는 admin delete RLS 정책이 없고,
+ * public.users.id가 auth.users(id) on delete cascade로 연결되어 있어 "진짜" 계정 삭제는
+ * supabase.auth.admin.deleteUser()(서비스 롤 키 필요)로만 가능하다. 이 프로젝트는 서비스
+ * 롤 키를 도입하지 않기로 했으므로(레포 전체에 사용처 없음, CLAUDE.md 필수 환경변수에도 없음)
+ * 삭제 버튼/Dialog 자체를 제공하지 않는다. 추후 서비스 롤 키를 도입하게 되면
+ * app/actions/admin.ts에 auth.admin.deleteUser() 기반 액션을 추가해 확장할 수 있다.
  */
-export function UsersTable({ initialUsers }: UsersTableProps) {
-  const [users, setUsers] = useState<UserWithEventStats[]>(initialUsers);
-  const [filter, setFilter] = useState<AdminUserFilter>({
-    search: "",
-    role: "all",
-  });
-  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+export function UsersTable({ users, totalCount, filter }: UsersTableProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [searchInput, setSearchInput] = useState(filter.search);
 
-  const filteredUsers = useMemo(() => {
-    const keyword = filter.search.trim().toLowerCase();
+  const totalPages = Math.max(1, Math.ceil(totalCount / filter.pageSize));
+  const currentPage = filter.page + 1;
+  const hasPrevPage = filter.page > 0;
+  const hasNextPage = currentPage < totalPages;
 
-    return users.filter((user) => {
-      const matchesKeyword =
-        keyword.length === 0 ||
-        user.name.toLowerCase().includes(keyword) ||
-        user.email.toLowerCase().includes(keyword);
-      const matchesRole = filter.role === "all" || user.role === filter.role;
+  function updateQuery(
+    patch: Partial<{
+      search: string;
+      role: AdminUserRoleFilter;
+      page: number;
+    }>,
+  ) {
+    const next = {
+      search: patch.search ?? filter.search,
+      role: patch.role ?? filter.role,
+      // 검색어/역할이 바뀌면 첫 페이지로 리셋하고, 페이지 이동일 때만 명시적으로 page를 넘긴다.
+      page: patch.page ?? 0,
+    };
 
-      return matchesKeyword && matchesRole;
-    });
-  }, [users, filter]);
+    const params = new URLSearchParams();
+    if (next.search.trim()) params.set("search", next.search.trim());
+    if (next.role !== "all") params.set("role", next.role);
+    if (next.page > 0) params.set("page", String(next.page));
 
-  function handleDeleteConfirm() {
-    if (!deleteTargetId) return;
+    router.push(`${pathname}?${params.toString()}`);
+  }
 
-    setUsers((prev) => prev.filter((user) => user.id !== deleteTargetId));
-    setDeleteTargetId(null);
-    toast.success("사용자가 삭제되었습니다");
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    updateQuery({ search: searchInput });
   }
 
   return (
     <div className="space-y-4">
       {/* 검색/역할 필터 영역 */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <form
+        onSubmit={handleSearchSubmit}
+        className="flex flex-col gap-3 sm:flex-row sm:items-center"
+      >
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={filter.search}
-            onChange={(e) =>
-              setFilter((prev) => ({ ...prev, search: e.target.value }))
-            }
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="이름 또는 이메일로 검색"
             className="pl-9"
           />
@@ -101,7 +112,7 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
         <Select
           value={filter.role}
           onValueChange={(value: AdminUserRoleFilter) =>
-            setFilter((prev) => ({ ...prev, role: value }))
+            updateQuery({ role: value })
           }
         >
           <SelectTrigger className="w-full sm:w-36">
@@ -115,7 +126,11 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
             ))}
           </SelectContent>
         </Select>
-      </div>
+
+        <Button type="submit" variant="secondary" className="sm:w-auto">
+          검색
+        </Button>
+      </form>
 
       {/* 사용자 목록 테이블 */}
       <div className="rounded-md border bg-card">
@@ -127,12 +142,11 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
               <TableHead>역할</TableHead>
               <TableHead className="text-right">주최 수</TableHead>
               <TableHead className="text-right">참여 수</TableHead>
-              <TableHead className="text-right">삭제</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
+            {users.length > 0 ? (
+              users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="max-w-48 truncate font-medium">
                     {user.name}
@@ -153,52 +167,12 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
                   <TableCell className="text-right">
                     {user.participatingEventCount}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <Dialog
-                      open={deleteTargetId === user.id}
-                      onOpenChange={(open) =>
-                        setDeleteTargetId(open ? user.id : null)
-                      }
-                    >
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="사용자 삭제"
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>사용자를 삭제할까요?</DialogTitle>
-                          <DialogDescription>
-                            삭제하면 되돌릴 수 없어요
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button
-                            variant="outline"
-                            onClick={() => setDeleteTargetId(null)}
-                          >
-                            취소
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            onClick={handleDeleteConfirm}
-                          >
-                            삭제
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={5}
                   className="h-24 text-center text-muted-foreground"
                 >
                   조건에 맞는 사용자가 없습니다.
@@ -207,6 +181,33 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 페이지네이션 */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          총 {totalCount}건 · {currentPage} / {totalPages} 페이지
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasPrevPage}
+            onClick={() => updateQuery({ page: filter.page - 1 })}
+          >
+            <ChevronLeft className="size-4" />
+            이전
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasNextPage}
+            onClick={() => updateQuery({ page: filter.page + 1 })}
+          >
+            다음
+            <ChevronRight className="size-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

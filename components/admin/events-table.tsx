@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search, Trash2 } from "lucide-react";
+import { useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { deleteEventAsAdmin } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { EventStatusBadge } from "@/components/events/event-status-badge";
 import type {
-  AdminEventFilter,
+  AdminEventListParams,
   EventStatusFilter,
   EventWithHost,
 } from "@/types";
@@ -39,8 +41,12 @@ import type {
 type AdminEventRow = EventWithHost & { participant_count: number };
 
 interface EventsTableProps {
-  /** 서버에서 조회한 초기 이벤트 목록 (관리자 화면 전용 더미 조합 데이터) */
-  initialEvents: AdminEventRow[];
+  /** 서버(getAdminEventsOverview)에서 이미 검색·필터·페이지네이션이 적용된 현재 페이지 목록 */
+  events: AdminEventRow[];
+  /** 필터 조건 전체에 대한 총 건수(페이지네이션 계산용) */
+  totalCount: number;
+  /** 현재 적용된 검색/필터/페이지 파라미터(URL 쿼리와 동기화된 상태) */
+  filter: AdminEventListParams;
 }
 
 const STATUS_OPTIONS: { value: EventStatusFilter; label: string }[] = [
@@ -63,51 +69,83 @@ function formatEventDate(isoDate: string) {
 
 /**
  * 관리자용 이벤트 관리 테이블.
- * 검색어(제목/장소)와 상태로 클라이언트 사이드 필터링하며,
- * 행 삭제는 로컬 state에서만 제거하는 더미 동작(실제 API 없음)이다.
+ * 검색어(제목/장소)·상태·페이지는 모두 URL 쿼리 파라미터로 관리하며, 값이 바뀔 때마다
+ * router.push로 URL을 갱신해 상위 Server Component(app/admin/(dashboard)/events/page.tsx)가
+ * getAdminEventsOverview를 다시 호출하도록 한다(클라이언트 사이드 필터링 없음).
+ *
+ * 삭제 확인 후에는 app/actions/admin.ts의 deleteEventAsAdmin 서버 액션을 useTransition으로
+ * 호출한다. 액션 내부에서 이미 revalidatePath를 호출하지만, 현재 화면을 즉시 갱신하기 위해
+ * 성공 시 router.refresh()도 함께 호출한다.
  */
-export function EventsTable({ initialEvents }: EventsTableProps) {
-  const [events, setEvents] = useState<AdminEventRow[]>(initialEvents);
-  const [filter, setFilter] = useState<AdminEventFilter>({
-    search: "",
-    status: "all",
-  });
+export function EventsTable({ events, totalCount, filter }: EventsTableProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [searchInput, setSearchInput] = useState(filter.search);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  const filteredEvents = useMemo(() => {
-    const keyword = filter.search.trim().toLowerCase();
+  const totalPages = Math.max(1, Math.ceil(totalCount / filter.pageSize));
+  const currentPage = filter.page + 1;
+  const hasPrevPage = filter.page > 0;
+  const hasNextPage = currentPage < totalPages;
 
-    return events.filter((event) => {
-      const matchesKeyword =
-        keyword.length === 0 ||
-        event.title.toLowerCase().includes(keyword) ||
-        event.location.toLowerCase().includes(keyword);
-      const matchesStatus =
-        filter.status === "all" || event.status === filter.status;
+  function updateQuery(
+    patch: Partial<{
+      search: string;
+      status: EventStatusFilter;
+      page: number;
+    }>,
+  ) {
+    const next = {
+      search: patch.search ?? filter.search,
+      status: patch.status ?? filter.status,
+      // 검색어/상태가 바뀌면 첫 페이지로 리셋하고, 페이지 이동일 때만 명시적으로 page를 넘긴다.
+      page: patch.page ?? 0,
+    };
 
-      return matchesKeyword && matchesStatus;
-    });
-  }, [events, filter]);
+    const params = new URLSearchParams();
+    if (next.search.trim()) params.set("search", next.search.trim());
+    if (next.status !== "all") params.set("status", next.status);
+    if (next.page > 0) params.set("page", String(next.page));
+
+    router.push(`${pathname}?${params.toString()}`);
+  }
+
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    updateQuery({ search: searchInput });
+  }
 
   function handleDeleteConfirm() {
     if (!deleteTargetId) return;
+    const targetId = deleteTargetId;
 
-    setEvents((prev) => prev.filter((event) => event.id !== deleteTargetId));
-    setDeleteTargetId(null);
-    toast.success("이벤트가 삭제되었습니다");
+    startTransition(async () => {
+      const result = await deleteEventAsAdmin(targetId);
+      if (result.success) {
+        toast.success("이벤트가 삭제되었습니다");
+        // revalidatePath는 이미 서버 액션 내부에서 호출되지만, 현재 페이지를 즉시
+        // 최신 데이터로 다시 렌더링하기 위해 router.refresh()로 재조회를 트리거한다.
+        router.refresh();
+      } else {
+        toast.error(result.message ?? "삭제에 실패했어요");
+      }
+      setDeleteTargetId(null);
+    });
   }
 
   return (
     <div className="space-y-4">
       {/* 검색/상태 필터 영역 */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <form
+        onSubmit={handleSearchSubmit}
+        className="flex flex-col gap-3 sm:flex-row sm:items-center"
+      >
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={filter.search}
-            onChange={(e) =>
-              setFilter((prev) => ({ ...prev, search: e.target.value }))
-            }
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="제목 또는 장소로 검색"
             className="pl-9"
           />
@@ -116,7 +154,7 @@ export function EventsTable({ initialEvents }: EventsTableProps) {
         <Select
           value={filter.status}
           onValueChange={(value: EventStatusFilter) =>
-            setFilter((prev) => ({ ...prev, status: value }))
+            updateQuery({ status: value })
           }
         >
           <SelectTrigger className="w-full sm:w-36">
@@ -130,7 +168,11 @@ export function EventsTable({ initialEvents }: EventsTableProps) {
             ))}
           </SelectContent>
         </Select>
-      </div>
+
+        <Button type="submit" variant="secondary" className="sm:w-auto">
+          검색
+        </Button>
+      </form>
 
       {/* 이벤트 목록 테이블 */}
       <div className="rounded-md border bg-card">
@@ -147,8 +189,8 @@ export function EventsTable({ initialEvents }: EventsTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredEvents.length > 0 ? (
-              filteredEvents.map((event) => (
+            {events.length > 0 ? (
+              events.map((event) => (
                 <TableRow key={event.id}>
                   <TableCell className="max-w-48 truncate font-medium">
                     {event.title}
@@ -191,14 +233,16 @@ export function EventsTable({ initialEvents }: EventsTableProps) {
                           <Button
                             variant="outline"
                             onClick={() => setDeleteTargetId(null)}
+                            disabled={isPending}
                           >
                             취소
                           </Button>
                           <Button
                             variant="destructive"
                             onClick={handleDeleteConfirm}
+                            disabled={isPending}
                           >
-                            삭제
+                            {isPending ? "삭제 중..." : "삭제"}
                           </Button>
                         </DialogFooter>
                       </DialogContent>
@@ -218,6 +262,33 @@ export function EventsTable({ initialEvents }: EventsTableProps) {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 페이지네이션 */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          총 {totalCount}건 · {currentPage} / {totalPages} 페이지
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasPrevPage}
+            onClick={() => updateQuery({ page: filter.page - 1 })}
+          >
+            <ChevronLeft className="size-4" />
+            이전
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasNextPage}
+            onClick={() => updateQuery({ page: filter.page + 1 })}
+          >
+            다음
+            <ChevronRight className="size-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
