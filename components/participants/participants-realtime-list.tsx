@@ -103,8 +103,15 @@ export function ParticipantsRealtimeList({
       )
       .subscribe();
 
+    // 원인 불명의 Supabase Realtime 결함으로 이 프로젝트에서 event_participants의 INSERT
+    // 이벤트가 postgres_changes 구독에 전달되지 않는 경우가 있음을 raw 프로브로 확인함
+    // (DELETE는 정상 전달됨; RLS/publication/REPLICA IDENTITY 모두 정상 설정 확인됨).
+    // realtime이 이벤트를 놓쳐도 몇 초 내에는 최신 상태가 되도록 폴링을 안전망으로 병행한다.
+    const pollTimer = setInterval(refetch, 5000);
+
     return () => {
       channel.unsubscribe();
+      clearInterval(pollTimer);
     };
   }, [eventId]);
 

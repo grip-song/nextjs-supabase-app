@@ -12,6 +12,7 @@ import {
   UNIQUE_VIOLATION_CODE,
   withInviteCodeRetry,
 } from "@/lib/events/invite-code";
+import { localInputToUtcIso } from "@/lib/events/datetime";
 
 /** 이벤트 생성/수정 폼(useActionState)이 공유하는 상태 타입 */
 export type EventActionState = {
@@ -95,7 +96,7 @@ export async function createEvent(
       id: eventId,
       title,
       location,
-      event_date,
+      event_date: localInputToUtcIso(event_date),
       description: description || null,
       cover_image_url: coverImageUrl,
       invite_code: inviteCode,
@@ -201,7 +202,7 @@ export async function updateEvent(
     .update({
       title,
       location,
-      event_date,
+      event_date: localInputToUtcIso(event_date),
       description: description || null,
       cover_image_url: coverImageUrl,
     })

@@ -8,16 +8,7 @@ import { getEventByInviteCode } from "@/lib/events/queries";
 import { getUserById } from "@/lib/users/queries";
 import { isUserParticipating } from "@/lib/participants/queries";
 import { createClient } from "@/lib/supabase/server";
-
-function formatEventDate(isoDate: string) {
-  return new Date(isoDate).toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+import { formatEventDateTime } from "@/lib/events/datetime";
 
 export default async function JoinEventPage({
   params,
@@ -81,7 +72,9 @@ export default async function JoinEventPage({
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <Calendar className="size-4 shrink-0" />
-              <span>{formatEventDate(event.event_date)}</span>
+              <span>
+                {formatEventDateTime(event.event_date, { withYear: true })}
+              </span>
             </div>
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <MapPin className="size-4 shrink-0" />

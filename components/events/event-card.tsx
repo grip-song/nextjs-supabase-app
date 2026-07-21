@@ -10,6 +10,7 @@ import {
 import { EventStatusBadge } from "@/components/events/event-status-badge";
 import { UserAvatar } from "@/components/user-avatar";
 import { cn } from "@/lib/utils";
+import { formatEventDateTime } from "@/lib/events/datetime";
 import type { EventWithParticipantCount, User } from "@/types";
 
 interface EventCardProps {
@@ -18,15 +19,6 @@ interface EventCardProps {
   href?: string;
   variant?: "default" | "compact";
   className?: string;
-}
-
-function formatEventDate(isoDate: string) {
-  return new Date(isoDate).toLocaleString("ko-KR", {
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 /**
@@ -82,7 +74,7 @@ export function EventCard({
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Calendar className="size-4 shrink-0" />
             <span className="line-clamp-1">
-              {formatEventDate(event.event_date)}
+              {formatEventDateTime(event.event_date)}
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">

@@ -8,16 +8,7 @@ import { LeaveEventButton } from "@/components/participants/leave-event-button";
 import { createClient } from "@/lib/supabase/server";
 import { getEventById } from "@/lib/events/queries";
 import { getParticipantsWithUser } from "@/lib/participants/queries";
-
-function formatEventDate(isoDate: string) {
-  return new Date(isoDate).toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+import { formatEventDateTime } from "@/lib/events/datetime";
 
 export default async function EventDetailPage({
   params,
@@ -73,7 +64,9 @@ export default async function EventDetailPage({
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Calendar className="size-4 shrink-0" />
-            <span>{formatEventDate(event.event_date)}</span>
+            <span>
+              {formatEventDateTime(event.event_date, { withYear: true })}
+            </span>
           </div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="size-4 shrink-0" />

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteEventAsAdmin } from "@/app/actions/admin";
+import { formatEventDateTime } from "@/lib/events/datetime";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -55,17 +56,6 @@ const STATUS_OPTIONS: { value: EventStatusFilter; label: string }[] = [
   { value: "ongoing", label: "진행 중" },
   { value: "ended", label: "종료" },
 ];
-
-/** 이벤트 일시를 "YYYY년 M월 D일 오후 H:mm" 형식으로 표시 */
-function formatEventDate(isoDate: string) {
-  return new Date(isoDate).toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 /**
  * 관리자용 이벤트 관리 테이블.
@@ -196,7 +186,9 @@ export function EventsTable({ events, totalCount, filter }: EventsTableProps) {
                     {event.title}
                   </TableCell>
                   <TableCell>{event.host.name}</TableCell>
-                  <TableCell>{formatEventDate(event.event_date)}</TableCell>
+                  <TableCell>
+                    {formatEventDateTime(event.event_date, { withYear: true })}
+                  </TableCell>
                   <TableCell className="max-w-40 truncate">
                     {event.location}
                   </TableCell>
