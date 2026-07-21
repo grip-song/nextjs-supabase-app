@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -16,16 +16,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleLoginButton } from "@/components/google-login-button";
 
-export default function AdminLoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+/**
+ * 로그인은 성공했지만 관리자 권한이 없어 (dashboard)/layout.tsx가 되돌려보낸 경우를 안내한다.
+ * <Toaster />가 app/layout.tsx에서 {children}보다 뒤에 렌더링되어 마운트 이펙트도 나중에 실행되므로,
+ * 마운트 시점에 곧바로 toast()를 호출하면 아직 구독 전이라 유실된다. 다음 매크로태스크로 미뤄서 회피한다.
+ * useSearchParams() 사용부만 별도 컴포넌트로 분리해 Suspense로 감싼다 - 그렇지 않으면 프로덕션
+ * 빌드(prerender) 시 "useSearchParams() should be wrapped in a suspense boundary" 에러로 실패한다.
+ */
+function ForbiddenErrorNotice() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 로그인은 성공했지만 관리자 권한이 없어 (dashboard)/layout.tsx가 되돌려보낸 경우를 안내한다.
-  // <Toaster />가 app/layout.tsx에서 {children}보다 뒤에 렌더링되어 마운트 이펙트도 나중에 실행되므로,
-  // 마운트 시점에 곧바로 toast()를 호출하면 아직 구독 전이라 유실된다. 다음 매크로태스크로 미뤄서 회피한다.
   useEffect(() => {
     if (searchParams.get("error") !== "forbidden") return;
 
@@ -36,6 +37,15 @@ export default function AdminLoginPage() {
 
     return () => clearTimeout(timer);
   }, [searchParams, router]);
+
+  return null;
+}
+
+export default function AdminLoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +83,9 @@ export default function AdminLoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
+      <Suspense fallback={null}>
+        <ForbiddenErrorNotice />
+      </Suspense>
       <div className="w-full max-w-sm">
         <Card>
           <CardHeader>
