@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -10,6 +10,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "대시보드", icon: LayoutDashboard },
@@ -20,6 +21,13 @@ const NAV_ITEMS = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/admin/login");
+  };
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r bg-gray-900 text-gray-100">
@@ -47,7 +55,10 @@ export function AdminSidebar() {
           );
         })}
       </nav>
-      <button className="flex h-12 items-center gap-3 px-6 text-sm text-gray-300 hover:bg-gray-800">
+      <button
+        onClick={handleLogout}
+        className="flex h-12 items-center gap-3 px-6 text-sm text-gray-300 hover:bg-gray-800"
+      >
         <LogOut size={20} />
         로그아웃
       </button>

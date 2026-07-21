@@ -28,7 +28,7 @@ export default async function AdminDashboardLayout({
     .single();
 
   if (profile?.role !== "admin") {
-    redirect("/admin/login");
+    redirect("/admin/login?error=forbidden");
   }
 
   return (

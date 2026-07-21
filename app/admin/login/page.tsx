@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,15 +14,59 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GoogleLoginButton } from "@/components/google-login-button";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // TODO: 실제 Supabase 인증 연동 필요 (현재는 UI 목업)
-  const handleSubmit = (e: React.FormEvent) => {
+  // 로그인은 성공했지만 관리자 권한이 없어 (dashboard)/layout.tsx가 되돌려보낸 경우를 안내한다.
+  // <Toaster />가 app/layout.tsx에서 {children}보다 뒤에 렌더링되어 마운트 이펙트도 나중에 실행되므로,
+  // 마운트 시점에 곧바로 toast()를 호출하면 아직 구독 전이라 유실된다. 다음 매크로태스크로 미뤄서 회피한다.
+  useEffect(() => {
+    if (searchParams.get("error") !== "forbidden") return;
+
+    const timer = setTimeout(() => {
+      toast.error("관리자 권한이 없는 계정이에요");
+    }, 0);
+    router.replace("/admin/login");
+
+    return () => clearTimeout(timer);
+  }, [searchParams, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error || !data.user) {
+      toast.error("이메일 또는 비밀번호가 올바르지 않아요");
+      setIsLoading(false);
+      return;
+    }
+
+    // user_metadata는 조작 가능하므로 신뢰 가능한 public.users.role을 조회해 판정한다
+    // (app/admin/(dashboard)/layout.tsx와 동일한 신뢰 소스/패턴).
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profile?.role !== "admin") {
+      toast.error("관리자 권한이 없는 계정이에요");
+      setIsLoading(false);
+      return;
+    }
+
     toast.success("로그인되었습니다");
     router.push("/admin/dashboard");
   };
@@ -60,11 +105,24 @@ export default function AdminLoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
-                <Button type="submit" className="w-full">
-                  로그인
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "로그인 중..." : "로그인"}
                 </Button>
               </div>
             </form>
+
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-card px-2 text-muted-foreground uppercase">
+                  또는
+                </span>
+              </div>
+            </div>
+
+            <GoogleLoginButton redirectPath="/admin/dashboard" />
           </CardContent>
         </Card>
       </div>

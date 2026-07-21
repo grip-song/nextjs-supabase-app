@@ -4,16 +4,25 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
-export function GoogleLoginButton() {
+interface GoogleLoginButtonProps {
+  /** OAuth 콜백 완료 후 이동할 경로. 미지정 시 /auth/callback route의 기본값(/events) 사용 */
+  redirectPath?: string;
+}
+
+export function GoogleLoginButton({ redirectPath }: GoogleLoginButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     const supabase = createClient();
+    const callbackUrl = new URL("/auth/callback", window.location.origin);
+    if (redirectPath) {
+      callbackUrl.searchParams.set("next", redirectPath);
+    }
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl.toString(),
       },
     });
   };

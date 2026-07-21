@@ -70,6 +70,7 @@ export async function updateSession(request: NextRequest) {
     if (profile?.role !== "admin") {
       const url = request.nextUrl.clone();
       url.pathname = "/admin/login";
+      url.searchParams.set("error", "forbidden");
       return NextResponse.redirect(url);
     }
   }
