@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GoogleLoginButton } from "@/components/google-login-button";
+import { mapAuthErrorMessage } from "@/lib/auth/error-messages";
 
 export function LoginForm({
   className,
@@ -41,7 +42,11 @@ export function LoginForm({
       if (error) throw error;
       router.push("/events");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "오류가 발생했습니다");
+      setError(
+        error instanceof Error
+          ? mapAuthErrorMessage(error.message)
+          : "오류가 발생했습니다",
+      );
     } finally {
       setIsLoading(false);
     }
