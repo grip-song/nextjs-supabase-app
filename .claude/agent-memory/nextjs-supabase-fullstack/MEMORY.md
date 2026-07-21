@@ -1,0 +1,4 @@
+- [Supabase 원격 DB 연결 타임아웃](project_supabase_db_connection_timeout.md) — list_tables/list_migrations/list_extensions는 항상 타임아웃, get_project_url/get_advisors는 성공
+- [관리자 role 판정 방식 불일치](project_admin_role_source_of_truth.md) — 미들웨어는 user_metadata.role 사용, RLS는 반드시 public.users.role 기반이어야 함
+- [event_participants에 host도 포함되는 규칙](project_event_participants_includes_host.md) — 참여자 수 집계 및 통계에 영향
+- [문서 위치: docs/ROADMAP.md](project_docs_location.md) — 루트가 아닌 docs/ 하위에 위치
